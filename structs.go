@@ -2,6 +2,7 @@
 package structs
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"reflect"
@@ -135,6 +136,15 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			s, ok := val.Interface().(fmt.Stringer)
 			if ok {
 				out[name] = s.String()
+			}
+			continue
+		}
+
+		if tagOpts.Has("json") {
+			s, ok := val.Interface().(json.Marshaler)
+			if ok {
+				json, _ := s.MarshalJSON()
+				out[name] = string(json)
 			}
 			continue
 		}
