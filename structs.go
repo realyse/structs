@@ -144,10 +144,7 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			s, ok := val.Interface().(json.Marshaler)
 			if ok {
 				json, _ := s.MarshalJSON()
-				if string(json) == "null" {
-					continue
-				}
-				out[name] = json
+				out[name] = string(json)
 			}
 			continue
 		}
