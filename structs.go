@@ -2,10 +2,11 @@
 package structs
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"reflect"
+
+	null "gopkg.in/guregu/null.v3"
 )
 
 var (
@@ -140,11 +141,39 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			continue
 		}
 
-		if tagOpts.Has("json") {
-			s, ok := val.Interface().(json.Marshaler)
-			if ok {
-				json, _ := s.MarshalJSON()
-				out[name] = string(json)
+		if tagOpts.Has("nullable") {
+			valType := reflect.TypeOf(val)
+			switch valType {
+			case null.NullString:
+				fullValue := val.Interface().(null.NullString)
+
+				if fullValue.Valid {
+					out[name] = fullValue.String
+				}
+			case null.NullInt:
+				fullValue := val.Interface().(null.NullInt)
+
+				if fullValue.Valid {
+					out[name] = fullValue.Int64
+				}
+			case null.NullTime:
+				fullValue := val.Interface().(null.NullTime)
+
+				if fullValue.Valid {
+					out[name] = fullValue.String
+				}
+			case null.NullFloat:
+				fullValue := val.Interface().(null.NullFloat)
+
+				if fullValue.Valid {
+					out[name] = fullValue.Float64
+				}
+			case null.NullBool:
+				fullValue := val.Interface().(null.NullBool)
+
+				if fullValue.Valid {
+					out[name] = fullValue.Bool
+				}
 			}
 			continue
 		}
