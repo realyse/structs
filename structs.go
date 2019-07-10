@@ -4,7 +4,6 @@ package structs
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"reflect"
 )
@@ -145,8 +144,10 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			s, ok := val.Interface().(json.Marshaler)
 			if ok {
 				json, _ := s.MarshalJSON()
-				log.Println("in marshalling")
-				out[name] = string(json)
+				if string(json) == "null" {
+					continue
+				}
+				out[name] = json
 			}
 			continue
 		}
