@@ -14,6 +14,12 @@ var (
 	// a more granular to tweak certain structs. Lookup the necessary functions
 	// for more info.
 	DefaultTagName = "structs" // struct's field default tag name
+
+	nullString = reflect.TypeOf(null.String{})
+	nullInt    = reflect.TypeOf(null.Int{})
+	nullFloat  = reflect.TypeOf(null.Float{})
+	nullTime   = reflect.TypeOf(null.Time{})
+	nullBool   = reflect.TypeOf(null.Bool{})
 )
 
 // Struct encapsulates a struct type to provide several high level functions
@@ -142,39 +148,7 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 		}
 
 		if tagOpts.Has("nullable") {
-			valType := reflect.TypeOf(val)
-			switch valType.Name() {
-			case "String":
-				fullValue := val.Interface().(null.String)
-
-				if fullValue.Valid {
-					out[name] = fullValue.String
-				}
-			case "Int":
-				fullValue := val.Interface().(null.Int)
-
-				if fullValue.Valid {
-					out[name] = fullValue.Int64
-				}
-			case "Time":
-				fullValue := val.Interface().(null.Time)
-
-				if fullValue.Valid {
-					out[name] = fullValue.Time
-				}
-			case "Float":
-				fullValue := val.Interface().(null.Float)
-
-				if fullValue.Valid {
-					out[name] = fullValue.Float64
-				}
-			case "Bool":
-				fullValue := val.Interface().(null.Bool)
-
-				if fullValue.Valid {
-					out[name] = fullValue.Bool
-				}
-			}
+			out[name] = convertNullFields(val)
 			continue
 		}
 
@@ -555,17 +529,23 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 
 	switch v.Kind() {
 	case reflect.Struct:
-		n := New(val.Interface())
-		n.TagName = s.TagName
-		m := n.Map()
+		switch val.Type() {
+		case nullString, nullInt, nullTime, nullFloat, nullBool:
+			finalVal = convertNullFields(val)
+		default:
+			n := New(val.Interface())
+			n.TagName = s.TagName
+			m := n.Map()
 
-		// do not add the converted value if there are no exported fields, ie:
-		// time.Time
-		if len(m) == 0 {
-			finalVal = val.Interface()
-		} else {
-			finalVal = m
+			// do not add the converted value if there are no exported fields, ie:
+			// time.Time
+			if len(m) == 0 {
+				finalVal = val.Interface()
+			} else {
+				finalVal = m
+			}
 		}
+
 	case reflect.Map:
 		// get the element type of the map
 		mapElem := val.Type()
@@ -620,4 +600,41 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 	}
 
 	return finalVal
+}
+
+func convertNullFields(val reflect.Value) interface{} {
+	switch val.Type() {
+	case nullString:
+		fullValue := val.Interface().(null.String)
+
+		if fullValue.Valid {
+			return fullValue.String
+		}
+	case nullInt:
+		fullValue := val.Interface().(null.Int)
+
+		if fullValue.Valid {
+			return fullValue.Int64
+		}
+	case nullTime:
+		fullValue := val.Interface().(null.Time)
+
+		if fullValue.Valid {
+			return fullValue.Time
+		}
+	case nullFloat:
+		fullValue := val.Interface().(null.Float)
+
+		if fullValue.Valid {
+			return fullValue.Float64
+		}
+	case nullBool:
+		fullValue := val.Interface().(null.Bool)
+
+		if fullValue.Valid {
+			return fullValue.Bool
+		}
+	}
+
+	return nil
 }
