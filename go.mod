@@ -1,4 +1,4 @@
-module github/realyse/structs
+module github.com/realyse/structs
 
 go 1.12
 
