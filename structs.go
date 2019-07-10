@@ -6,7 +6,7 @@ import (
 
 	"reflect"
 
-	null "gopkg.in/guregu/null.v3"
+	"gopkg.in/guregu/null.v3"
 )
 
 var (
@@ -143,33 +143,33 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 
 		if tagOpts.Has("nullable") {
 			valType := reflect.TypeOf(val)
-			switch valType {
-			case null.NullString:
-				fullValue := val.Interface().(null.NullString)
+			switch valType.Name() {
+			case "String":
+				fullValue := val.Interface().(null.String)
 
 				if fullValue.Valid {
 					out[name] = fullValue.String
 				}
-			case null.NullInt:
-				fullValue := val.Interface().(null.NullInt)
+			case "Int":
+				fullValue := val.Interface().(null.Int)
 
 				if fullValue.Valid {
 					out[name] = fullValue.Int64
 				}
-			case null.NullTime:
-				fullValue := val.Interface().(null.NullTime)
+			case "Time":
+				fullValue := val.Interface().(null.Time)
 
 				if fullValue.Valid {
-					out[name] = fullValue.String
+					out[name] = fullValue.Time
 				}
-			case null.NullFloat:
-				fullValue := val.Interface().(null.NullFloat)
+			case "Float":
+				fullValue := val.Interface().(null.Float)
 
 				if fullValue.Valid {
 					out[name] = fullValue.Float64
 				}
-			case null.NullBool:
-				fullValue := val.Interface().(null.NullBool)
+			case "Bool":
+				fullValue := val.Interface().(null.Bool)
 
 				if fullValue.Valid {
 					out[name] = fullValue.Bool
