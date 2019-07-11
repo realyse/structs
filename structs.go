@@ -136,7 +136,12 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 				isSubStruct = true
 			}
 		} else {
-			finalVal = val.Interface()
+			switch val.Type() {
+			case nullString, nullInt, nullTime, nullFloat, nullBool:
+				finalVal = convertNullFields(val)
+			default:
+				finalVal = val.Interface()
+			}
 		}
 
 		if tagOpts.Has("string") {
@@ -144,11 +149,6 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			if ok {
 				out[name] = s.String()
 			}
-			continue
-		}
-
-		if tagOpts.Has("nullable") {
-			out[name] = convertNullFields(val)
 			continue
 		}
 
