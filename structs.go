@@ -6,6 +6,7 @@ import (
 
 	"reflect"
 
+	geojson "github.com/realyse/go.geojson"
 	"gopkg.in/guregu/null.v3"
 )
 
@@ -15,11 +16,13 @@ var (
 	// for more info.
 	DefaultTagName = "structs" // struct's field default tag name
 
-	nullString = reflect.TypeOf(null.String{})
-	nullInt    = reflect.TypeOf(null.Int{})
-	nullFloat  = reflect.TypeOf(null.Float{})
-	nullTime   = reflect.TypeOf(null.Time{})
-	nullBool   = reflect.TypeOf(null.Bool{})
+	nullString      = reflect.TypeOf(null.String{})
+	nullInt         = reflect.TypeOf(null.Int{})
+	nullFloat       = reflect.TypeOf(null.Float{})
+	nullTime        = reflect.TypeOf(null.Time{})
+	nullBool        = reflect.TypeOf(null.Bool{})
+	geojsonFeature  = reflect.TypeOf(geojson.Feature)
+	geojsonGeometry = reflect.TypeOf(geojson.Geometry)
 )
 
 // Struct encapsulates a struct type to provide several high level functions
@@ -532,6 +535,8 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 		switch val.Type() {
 		case nullString, nullInt, nullTime, nullFloat, nullBool:
 			finalVal = convertNullFields(val)
+		case geojsonGeometry:
+			finalVal = convertGeoGeometry(val)
 		default:
 			n := New(val.Interface())
 			n.TagName = s.TagName
@@ -600,6 +605,46 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 	}
 
 	return finalVal
+}
+
+func convertGeoGeometry(val reflect.Value) interface{} {
+	fullGeo := val.Interface().(geojson.Geometry)
+
+	// defining a struct here lets us define the order of the JSON elements.
+	type geometry struct {
+		Type        geojson.GeometryType   `json:"type"`
+		BoundingBox []float64              `json:"bbox,omitempty"`
+		Coordinates interface{}            `json:"coordinates,omitempty"`
+		Geometries  interface{}            `json:"geometries,omitempty"`
+		CRS         map[string]interface{} `json:"crs,omitempty"`
+	}
+
+	geo := &geometry{
+		Type: fullGeo.Type,
+	}
+
+	if fullGeo.BoundingBox != nil && len(fullGeo.BoundingBox) != 0 {
+		geo.BoundingBox = fullGeo.BoundingBox
+	}
+
+	switch fullGeo.Type {
+	case geojson.GeometryPoint:
+		geo.Coordinates = fullGeo.Point
+	case geojson.GeometryMultiPoint:
+		geo.Coordinates = fullGeo.MultiPoint
+	case geojson.GeometryLineString:
+		geo.Coordinates = fullGeo.LineString
+	case geojson.GeometryMultiLineString:
+		geo.Coordinates = fullGeo.MultiLineString
+	case geojson.GeometryPolygon:
+		geo.Coordinates = fullGeo.Polygon
+	case geojson.GeometryMultiPolygon:
+		geo.Coordinates = fullGeo.MultiPolygon
+	case geojson.GeometryCollection:
+		geo.Geometries = fullGeo.Geometries
+	}
+
+	return geo
 }
 
 func convertNullFields(val reflect.Value) interface{} {
