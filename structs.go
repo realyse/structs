@@ -21,8 +21,8 @@ var (
 	nullFloat       = reflect.TypeOf(null.Float{})
 	nullTime        = reflect.TypeOf(null.Time{})
 	nullBool        = reflect.TypeOf(null.Bool{})
-	geojsonFeature  = reflect.TypeOf(geojson.Feature)
-	geojsonGeometry = reflect.TypeOf(geojson.Geometry)
+	geojsonFeature  = reflect.TypeOf(geojson.Feature{})
+	geojsonGeometry = reflect.TypeOf(geojson.Geometry{})
 )
 
 // Struct encapsulates a struct type to provide several high level functions
