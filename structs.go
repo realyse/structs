@@ -142,6 +142,8 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			switch val.Type() {
 			case nullString, nullInt, nullTime, nullFloat, nullBool:
 				finalVal = convertNullFields(val)
+			case geojsonGeometry:
+				finalVal = convertGeoGeometry(val)
 			default:
 				finalVal = val.Interface()
 			}
