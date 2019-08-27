@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/lib/pq"
+	"github.com/realyse/api/src/helpers"
 	geojson "github.com/realyse/go.geojson"
 	"gopkg.in/guregu/null.v3"
 )
@@ -23,6 +24,7 @@ var (
 	nullTime        = reflect.TypeOf(null.Time{})
 	nullBool        = reflect.TypeOf(null.Bool{})
 	pqTime          = reflect.TypeOf(pq.NullTime{})
+	jsonNullTime    = reflect.TypeOf(helpers.JsonNullTime{})
 	geojsonFeature  = reflect.TypeOf(geojson.Feature{})
 	geojsonGeometry = reflect.TypeOf(geojson.Geometry{})
 )
@@ -140,7 +142,6 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			if v.Kind() == reflect.Ptr {
 				v = v.Elem()
 			}
-
 			switch v.Kind() {
 			case reflect.Map, reflect.Struct:
 				isSubStruct = true
@@ -152,7 +153,7 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			}
 
 			switch val.Type() {
-			case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
+			case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime, jsonNullTime:
 				finalVal = convertNullFields(val, date)
 			case geojsonGeometry:
 				finalVal = convertGeoGeometry(val)
@@ -547,7 +548,7 @@ func (s *Struct) nested(val reflect.Value, date bool) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		switch val.Type() {
-		case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
+		case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime, jsonNullTime:
 			finalVal = convertNullFields(val, date)
 		case geojsonGeometry:
 			finalVal = convertGeoGeometry(val)
@@ -698,6 +699,15 @@ func convertNullFields(val reflect.Value, formatDate bool) interface{} {
 		}
 	case pqTime:
 		fullValue := val.Interface().(pq.NullTime)
+
+		if fullValue.Valid {
+			if formatDate {
+				return fullValue.Time.Format("2006-01-02")
+			}
+			return fullValue.Time
+		}
+	case jsonNullTime:
+		fullValue := val.Interface().(helpers.JsonNullTime)
 
 		if fullValue.Valid {
 			if formatDate {
