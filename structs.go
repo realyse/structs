@@ -142,7 +142,7 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			}
 		} else {
 			switch val.Type() {
-			case nullString, nullInt, nullTime, nullFloat, nullBool:
+			case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
 				finalVal = convertNullFields(val)
 			case geojsonGeometry:
 				finalVal = convertGeoGeometry(val)
@@ -537,7 +537,7 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		switch val.Type() {
-		case nullString, nullInt, nullTime, nullFloat, nullBool:
+		case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
 			finalVal = convertNullFields(val)
 		case geojsonGeometry:
 			finalVal = convertGeoGeometry(val)
