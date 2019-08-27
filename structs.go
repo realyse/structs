@@ -3,11 +3,11 @@ package structs
 
 import (
 	"fmt"
+	"time"
 
 	"reflect"
 
 	"github.com/lib/pq"
-	"github.com/realyse/api/src/helpers"
 	geojson "github.com/realyse/go.geojson"
 	"gopkg.in/guregu/null.v3"
 )
@@ -24,7 +24,6 @@ var (
 	nullTime        = reflect.TypeOf(null.Time{})
 	nullBool        = reflect.TypeOf(null.Bool{})
 	pqTime          = reflect.TypeOf(pq.NullTime{})
-	jsonNullTime    = reflect.TypeOf(helpers.JsonNullTime{})
 	geojsonFeature  = reflect.TypeOf(geojson.Feature{})
 	geojsonGeometry = reflect.TypeOf(geojson.Geometry{})
 )
@@ -133,6 +132,7 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 		if !tagOpts.Has("omitnested") {
 			date := false
 			if tagOpts.Has("date") {
+				fmt.Println("date nested")
 				date = true
 			}
 
@@ -153,7 +153,7 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 			}
 
 			switch val.Type() {
-			case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime, jsonNullTime:
+			case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
 				finalVal = convertNullFields(val, date)
 			case geojsonGeometry:
 				finalVal = convertGeoGeometry(val)
@@ -548,7 +548,7 @@ func (s *Struct) nested(val reflect.Value, date bool) interface{} {
 	switch v.Kind() {
 	case reflect.Struct:
 		switch val.Type() {
-		case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime, jsonNullTime:
+		case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
 			finalVal = convertNullFields(val, date)
 		case geojsonGeometry:
 			finalVal = convertGeoGeometry(val)
@@ -563,6 +563,13 @@ func (s *Struct) nested(val reflect.Value, date bool) interface{} {
 				finalVal = val.Interface()
 			} else {
 				finalVal = m
+
+				// helpers.JsonNullTime hack
+				if date {
+					time := m["NullTime"].(time.Time)
+
+					finalVal = time.Format("2006-01-02")
+				}
 			}
 		}
 
@@ -699,15 +706,6 @@ func convertNullFields(val reflect.Value, formatDate bool) interface{} {
 		}
 	case pqTime:
 		fullValue := val.Interface().(pq.NullTime)
-
-		if fullValue.Valid {
-			if formatDate {
-				return fullValue.Time.Format("2006-01-02")
-			}
-			return fullValue.Time
-		}
-	case jsonNullTime:
-		fullValue := val.Interface().(helpers.JsonNullTime)
 
 		if fullValue.Valid {
 			if formatDate {
