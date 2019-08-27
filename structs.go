@@ -6,6 +6,7 @@ import (
 
 	"reflect"
 
+	"github.com/lib/pq"
 	geojson "github.com/realyse/go.geojson"
 	"gopkg.in/guregu/null.v3"
 )
@@ -21,6 +22,7 @@ var (
 	nullFloat       = reflect.TypeOf(null.Float{})
 	nullTime        = reflect.TypeOf(null.Time{})
 	nullBool        = reflect.TypeOf(null.Bool{})
+	pqTime          = reflect.TypeOf(pq.NullTime{})
 	geojsonFeature  = reflect.TypeOf(geojson.Feature{})
 	geojsonGeometry = reflect.TypeOf(geojson.Geometry{})
 )
@@ -680,6 +682,12 @@ func convertNullFields(val reflect.Value) interface{} {
 
 		if fullValue.Valid {
 			return fullValue.Bool
+		}
+	case pqTime:
+		fullValue := val.Interface().(pq.NullTime)
+
+		if fullValue.Valid {
+			return fullValue.Time
 		}
 	}
 
