@@ -687,7 +687,7 @@ func convertNullFields(val reflect.Value) interface{} {
 		fullValue := val.Interface().(pq.NullTime)
 
 		if fullValue.Valid {
-			return fullValue.Time
+			return fullValue.Time.Format("2006-01-02")
 		}
 	}
 
