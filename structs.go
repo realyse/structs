@@ -129,7 +129,12 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 		}
 
 		if !tagOpts.Has("omitnested") {
-			finalVal = s.nested(val)
+			date := false
+			if tagOpts.Has("date") {
+				date = true
+			}
+
+			finalVal = s.nested(val, date)
 
 			v := reflect.ValueOf(val.Interface())
 			if v.Kind() == reflect.Ptr {
@@ -141,9 +146,14 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 				isSubStruct = true
 			}
 		} else {
+			date := false
+			if tagOpts.Has("date") {
+				date = true
+			}
+
 			switch val.Type() {
 			case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
-				finalVal = convertNullFields(val)
+				finalVal = convertNullFields(val, date)
 			case geojsonGeometry:
 				finalVal = convertGeoGeometry(val)
 			default:
@@ -526,7 +536,7 @@ func Name(s interface{}) string {
 
 // nested retrieves recursively all types for the given value and returns the
 // nested value.
-func (s *Struct) nested(val reflect.Value) interface{} {
+func (s *Struct) nested(val reflect.Value, date bool) interface{} {
 	var finalVal interface{}
 
 	v := reflect.ValueOf(val.Interface())
@@ -538,7 +548,7 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 	case reflect.Struct:
 		switch val.Type() {
 		case nullString, nullInt, nullTime, nullFloat, nullBool, pqTime:
-			finalVal = convertNullFields(val)
+			finalVal = convertNullFields(val, date)
 		case geojsonGeometry:
 			finalVal = convertGeoGeometry(val)
 		default:
@@ -574,7 +584,7 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 				mapElem.Elem().Kind() == reflect.Struct) {
 			m := make(map[string]interface{}, val.Len())
 			for _, k := range val.MapKeys() {
-				m[k.String()] = s.nested(val.MapIndex(k))
+				m[k.String()] = s.nested(val.MapIndex(k), date)
 			}
 			finalVal = m
 			break
@@ -601,7 +611,7 @@ func (s *Struct) nested(val reflect.Value) interface{} {
 
 		slices := make([]interface{}, val.Len())
 		for x := 0; x < val.Len(); x++ {
-			slices[x] = s.nested(val.Index(x))
+			slices[x] = s.nested(val.Index(x), date)
 		}
 		finalVal = slices
 	default:
@@ -651,7 +661,7 @@ func convertGeoGeometry(val reflect.Value) interface{} {
 	return geo
 }
 
-func convertNullFields(val reflect.Value) interface{} {
+func convertNullFields(val reflect.Value, formatDate bool) interface{} {
 	switch val.Type() {
 	case nullString:
 		fullValue := val.Interface().(null.String)
@@ -669,6 +679,9 @@ func convertNullFields(val reflect.Value) interface{} {
 		fullValue := val.Interface().(null.Time)
 
 		if fullValue.Valid {
+			if formatDate {
+				return fullValue.Time.Format("2006-01-02")
+			}
 			return fullValue.Time
 		}
 	case nullFloat:
@@ -687,7 +700,10 @@ func convertNullFields(val reflect.Value) interface{} {
 		fullValue := val.Interface().(pq.NullTime)
 
 		if fullValue.Valid {
-			return fullValue.Time.Format("2006-01-02")
+			if formatDate {
+				return fullValue.Time.Format("2006-01-02")
+			}
+			return fullValue.Time
 		}
 	}
 
